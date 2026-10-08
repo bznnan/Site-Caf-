@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Purple Blend Cafe - Painel de Pedidos</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #2A0845, #6441A5);
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(12px);
+            padding: 25px;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 650px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            margin-bottom: 25px;
+        }
+
+        h2, h3 { text-align: center; color: #E0C3FC; margin-top: 0; }
+        .form-group { margin-bottom: 12px; }
+        label { display: block; margin-bottom: 4px; font-weight: 600; font-size: 0.9rem; }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 9px;
+            border-radius: 8px;
+            border: 1px solid #B388FF;
+            background-color: rgba(255, 255, 255, 0.95);
+            color: #212121;
+            box-sizing: border-box;
+        }
+
+        textarea { height: 50px; resize: vertical; }
+
+        button {
+            width: 100%;
+            padding: 11px;
+            background-color: #B388FF;
+            border: none;
+            border-radius: 8px;
+            color: #2A0845;
+            font-weight: bold;
+            font-size: 0.95rem;
+            cursor: pointer;
+            margin-top: 8px;
+            transition: 0.3s;
+        }
+
+        button:hover { background-color: #D1C4E9; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 0.88rem;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        th { background-color: rgba(179, 136, 255, 0.3); color: #E0C3FC; }
+        tr:hover { background-color: rgba(255, 255, 255, 0.08); }
+
+        .btn-atualizar {
+            background-color: transparent;
+            border: 1px solid #B388FF;
+            color: #E0C3FC;
+            margin-bottom: 10px;
+        }
+
+        .btn-atualizar:hover { background-color: rgba(179, 136, 255, 0.2); }
+    </style>
+</head>
+<body>
+
+    <!-- BLOCO 1: FORMULÁRIO DE CADASTRO -->
+    <div class="card">
+        <h2>☕ Purple Blend Cafe</h2>
+        <form action="https://api-cafeteria-roxo.azurewebsites.net/fazer-pedido" method="POST">
+            
+            <div class="form-group">
+                <label>Seu Nome:</label>
+                <input type="text" name="nome_cliente" placeholder="Ex: Seu Nome" required>
+            </div>
+
+            <div class="form-group">
+                <label>Escolha o Café:</label>
+                <select name="cafe" required>
+                    <option value="">Selecione...</option>
+                    <option value="Espresso Tradicional">Espresso Tradicional</option>
+                    <option value="Cappuccino Purple">Cappuccino Purple</option>
+                    <option value="Iced Latte Vanilla">Iced Latte Vanilla</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Tamanho:</label>
+                <select name="tamanho" required>
+                    <option value="Pequeno">Pequeno (200ml)</option>
+                    <option value="Médio">Médio (350ml)</option>
+                    <option value="Grande">Grande (500ml)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Observações:</label>
+                <textarea name="observacoes" placeholder="Ex: Pouco açúcar..."></textarea>
+            </div>
+
+            <button type="submit">Enviar Pedido para o Banco</button>
+        </form>
+    </div>
+
+    <!-- BLOCO 2: TABELA DE CONSULTA DO BANCO DE DADOS -->
+    <div class="card">
+        <h3>📊 Pedidos Salvos no Azure SQL</h3>
+        <button type="button" class="btn-atualizar" onclick="carregarPedidos()">🔄 Atualizar Lista</button>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Cliente</th>
+                    <th>Café</th>
+                    <th>Tam.</th>
+                    <th>Obs.</th>
+                    <th>Data</th>
+                </tr>
+            </thead>
+            <tbody id="tabela-pedidos">
+                <tr>
+                    <td colspan="6" style="text-align: center;">Carregando pedidos do banco...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        async function carregarPedidos() {
+            const tabela = document.getElementById('tabela-pedidos');
+            
+            try {
+                const response = await fetch('https://api-cafeteria-roxo.azurewebsites.net/ver-pedidos');
+                const pedidos = await response.json();
+
+                if (pedidos.length === 0) {
+                    tabela.innerHTML = '<tr><td colspan="6" style="text-align: center;">Nenhum pedido cadastrado ainda.</td></tr>';
+                    return;
+                }
+
+                tabela.innerHTML = '';
+                pedidos.forEach(p => {
+                    const linha = `
+                        <tr>
+                            <td><strong>${p.id}</strong></td>
+                            <td>${p.nome_cliente}</td>
+                            <td>${p.cafe}</td>
+                            <td>${p.tamanho}</td>
+                            <td>${p.observacoes}</td>
+                            <td><small>${p.data_pedido}</small></td>
+                        </tr>
+                    `;
+                    tabela.innerHTML += linha;
+                });
+            } catch (erro) {
+                tabela.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #ff8a8a;">Erro ao carregar dados do banco.</td></tr>';
+            }
+        }
+
+        // Busca automática ao carregar a página
+        carregarPedidos();
+    </script>
+
+</body>
+</html>
